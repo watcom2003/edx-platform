@@ -6,9 +6,13 @@ import unittest
 
 import ddt
 from django.conf import settings
+from django.test import TestCase
+from django.urls import reverse
 from lxml import etree
 from onelogin.saml2.errors import OneLogin_Saml2_Error
 
+from student.helpers import get_next_url_for_login_page
+from third_party_auth import pipeline
 # Define some XML namespaces:
 from third_party_auth.tasks import SAML_XML_NS
 
@@ -153,3 +157,38 @@ class SAMLAuthTest(SAMLTestCase):
         self.enable_saml(enabled=False)
         response = self.client.get(self.LOGIN_URL)
         self.assertEqual(response.status_code, 404)
+
+
+class IdPRedirectViewTest(SAMLTestCase):
+    def setUp(self, *args, **kwargs):
+        super(IdPRedirectViewTest, self).setUp(*args, **kwargs)
+
+        self.enable_saml()
+        self.configure_saml_provider(
+            name="Test",
+            slug="test",
+            enabled=True,
+        )
+
+    def test_with_valid_provider_slug(self):
+        endpoint_url = self.get_idp_redirect_url('saml-test')
+        expected_url = pipeline.get_login_url('saml-test', pipeline.AUTH_ENTRY_LOGIN, reverse('dashboard'))
+
+        response = self.client.get(endpoint_url)
+ 
+        self.assertEqual(response.status_code, 302)
+        self.assertEqual(response.url, expected_url)
+
+    def test_with_invalid_provider_slug(self):
+        endpoint_url = self.get_idp_redirect_url('saml-test-invalid')
+
+        response = self.client.get(endpoint_url)
+
+        self.assertEqual(response.status_code, 404)
+
+    @staticmethod
+    def get_idp_redirect_url(provider_slug, next_destination=None):
+        return '{idp_redirect_url}?{next_destination}'.format(
+            idp_redirect_url=reverse('idp_redirect', kwargs={'provider_slug': provider_slug}),
+            next_destination=next_destination,
+        )
