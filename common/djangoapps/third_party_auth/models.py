@@ -16,6 +16,7 @@ from django.core.exceptions import ValidationError
 from django.db import models
 from django.utils import timezone
 from django.utils.translation import ugettext_lazy as _
+from organizations.models import Organization
 from provider.oauth2.models import Client
 from provider.utils import long_token
 from social_core.backends.base import BaseAuth
@@ -124,6 +125,12 @@ class ProviderConfig(ConfigurationModel):
             'Secondary providers are displayed less prominently, '
             'in a separate list of "Institution" login providers.'
         ),
+    )
+    organization = models.OneToOneField(
+        Organization,
+        blank=True,
+        null=True,
+        on_delete=models.CASCADE
     )
     site = models.ForeignKey(
         Site,
