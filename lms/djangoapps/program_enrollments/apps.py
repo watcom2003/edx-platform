@@ -14,5 +14,11 @@ class ProgramEnrollmentsConfig(AppConfig):
     name = 'lms.djangoapps.program_enrollments'
 
     plugin_app = {
-        'url_config': {},
+        PluginURLs.CONFIG: {
+            ProjectType.LMS: {
+                PluginURLs.NAMESPACE: u'programs_api',
+                PluginURLs.REGEX: u'api/',
+                PluginURLs.RELATIVE_PATH: u'api.urls',
+            }
+        },
     }
