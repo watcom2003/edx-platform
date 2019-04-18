@@ -130,7 +130,10 @@ class ProviderConfig(ConfigurationModel):
         Organization,
         blank=True,
         null=True,
-        on_delete=models.CASCADE
+        on_delete=models.CASCADE,
+        help_text=_(
+            'optional. If this provider is an Organization can be used to find user\'s by their external id'
+        )
     )
     site = models.ForeignKey(
         Site,

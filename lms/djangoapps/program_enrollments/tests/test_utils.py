@@ -12,7 +12,8 @@ from openedx.core.djangoapps.catalog.tests.factories import (
 from openedx.core.djangolib.testing.utils import CacheIsolationTestCase
 from organizations.tests.factories import OrganizationFactory
 from program_enrollments.utils import (
-    get_platform_user, ProgramDoesNotExistException, OrganizationDoesNotExistException, ProviderDoesNotExistException
+    get_user_by_program_id, ProgramDoesNotExistException, OrganizationDoesNotExistException,
+    ProviderDoesNotExistException
 )
 from social_django.models import UserSocialAuth
 from student.tests.factories import UserFactory
@@ -57,7 +58,7 @@ class GetPlatformUserTests(CacheIsolationTestCase):
             uid=self.external_user_id
         )
 
-        user = get_platform_user(self.external_user_id, self.program_uuid)
+        user = get_user_by_program_id(self.external_user_id, self.program_uuid)
         self.assertEquals(user, self.user)
 
     def test_user_not_created(self):
@@ -67,7 +68,7 @@ class GetPlatformUserTests(CacheIsolationTestCase):
         organization = OrganizationFactory.create(short_name=self.organization_key)
         SAMLProviderConfigFactory.create(organization=organization)
 
-        user = get_platform_user(self.external_user_id, self.program_uuid)
+        user = get_user_by_program_id(self.external_user_id, self.program_uuid)
         self.assertEquals(user, None)
 
     def test_catalog_program_does_not_exist(self):
@@ -76,7 +77,7 @@ class GetPlatformUserTests(CacheIsolationTestCase):
         not include the requested program uuid.
         """
         with pytest.raises(ProgramDoesNotExistException):
-            get_platform_user('school-id-1234', uuid4())
+            get_user_by_program_id('school-id-1234', uuid4())
 
     def test_catalog_program_missing_org(self):
         """
@@ -99,7 +100,7 @@ class GetPlatformUserTests(CacheIsolationTestCase):
         )
 
         with pytest.raises(OrganizationDoesNotExistException):
-            get_platform_user(self.external_user_id, self.program_uuid)
+            get_user_by_program_id(self.external_user_id, self.program_uuid)
 
     def test_lms_organization_not_found(self):
         """
@@ -116,7 +117,7 @@ class GetPlatformUserTests(CacheIsolationTestCase):
         )
 
         with pytest.raises(OrganizationDoesNotExistException):
-            get_platform_user(self.external_user_id, self.program_uuid)
+            get_user_by_program_id(self.external_user_id, self.program_uuid)
 
     def test_saml_provider_not_found(self):
         """
@@ -125,4 +126,4 @@ class GetPlatformUserTests(CacheIsolationTestCase):
         OrganizationFactory.create(short_name=self.organization_key)
 
         with pytest.raises(ProviderDoesNotExistException):
-            get_platform_user(self.external_user_id, self.program_uuid)
+            get_user_by_program_id(self.external_user_id, self.program_uuid)

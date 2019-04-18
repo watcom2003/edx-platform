@@ -25,12 +25,9 @@ class ProviderDoesNotExistException(UserLookupException):
     pass
 
 
-def get_platform_user(external_user_id, program_uuid):
+def get_user_by_program_id(external_user_id, program_uuid):
     """
-    Returns a User model for an external_user_id mapping to a social auth entry.
-
-    This function looks at a programs authoring_organization, finds a matching SAML Provider, and finally looks
-    for a social auth entry corresponding to the provided exernal id.
+    Returns a User model for an external_user_id with a social auth entry.
 
     Args:
         external_user_id: external user id used for social auth
@@ -44,7 +41,6 @@ def get_platform_user(external_user_id, program_uuid):
         OrganizationDoesNotExistException if no organization exists.
         ProviderDoesNotExistException if there is no SAML provider configured for the related organization.
     """
-
     program = get_programs(uuid=program_uuid)
     if program is None:
         log.error(u'Unable to find catalog program matching uuid [%s]', program_uuid)
@@ -52,16 +48,36 @@ def get_platform_user(external_user_id, program_uuid):
 
     try:
         org_key = program['authoring_organizations'][0]['key']
+        organization = Organization.objects.get(short_name=org_key)
     except (KeyError, IndexError):
         log.error(u'Cannot determine authoring organization key for catalog program [%s]')
         raise OrganizationDoesNotExistException
-
-    try:
-        organization = Organization.objects.get(short_name=org_key)
-        provider_slug = organization.samlproviderconfig.provider_id.strip('saml-')
     except Organization.DoesNotExist:
         log.error(u'Unable to find organization for short_name [%s]', org_key)
         raise OrganizationDoesNotExistException
+
+    return get_user_by_organization(external_user_id, organization)
+
+
+def get_user_by_organization(external_user_id, organization):
+    """
+    Returns a User model for an external_user_id with a social auth entry.
+
+    This function finds a matching SAML Provider for the given organization, and looks
+    for a social auth entry with the provided exernal id.
+
+    Args:
+        external_user_id: external user id used for social auth
+        organization: organization providing saml authentication for this user
+
+    Returns:
+        A User object.
+
+    Raises:
+        ProviderDoesNotExistException if there is no SAML provider configured for the related organization.
+    """
+    try:
+        provider_slug = organization.samlproviderconfig.provider_id.strip('saml-')
     except Organization.samlproviderconfig.RelatedObjectDoesNotExist:
         log.error(u'No SAML provider found for organization id [%s]', organization.id)
         raise ProviderDoesNotExistException
