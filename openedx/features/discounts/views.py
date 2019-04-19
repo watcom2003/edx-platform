@@ -3,9 +3,8 @@ The Discount API Views should return information about discounts that apply to t
 
 """
 # -*- coding: utf-8 -*-
-from __future__ import unicode_literals
 
-from .applicability import can_recieve_discount
+from .applicability import can_recieve_discount, discount_percentage
 
 from edx_rest_framework_extensions.auth.jwt.authentication import JwtAuthentication
 from edx_rest_framework_extensions.auth.session.authentication import SessionAuthenticationAllowInactiveUser
@@ -40,8 +39,6 @@ class CourseUserDiscount(DeveloperErrorViewMixin, APIView):
         username:
             The username of the specified user for whom the discount data
             is being accessed.
-        auth_token:
-            Token used to sign the jwt that is returned.
 
     **Returns**
 
@@ -65,11 +62,9 @@ class CourseUserDiscount(DeveloperErrorViewMixin, APIView):
 
     def get(self, request, course_key_string=None):
         """
-        Return the discount percent, if the user has appropriate
-        permissions.
+        Return the discount percent, if the user has appropriate permissions.
         """
-        username = request.GET.get('user', request.user.username)
-        discount_applicable = can_recieve_discount(user=username, course=course_key_string)
-        payload = {'discount_applicable': discount_applicable, 'discount_percent': 0}
-        return Response({'jwt': create_jwt_for_user(request.user, additional_claims=payload),
-                        'applicability':payload})
+        discount_applicable = can_recieve_discount(user=request.user, course_key_string=course_key_string)
+        discount_percent = discount_percentage()
+        payload = {'discount_applicable': discount_applicable, 'discount_percent': discount_percent}
+        return Response(create_jwt_for_user(request.user, additional_claims=payload))
