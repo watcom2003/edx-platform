@@ -144,9 +144,6 @@ class TestContentTypeGatingPartition(CacheIsolationTestCase):
         with patch(
             'crum.get_current_request',
             return_value=mock_request
-        ), patch(
-            'openedx.features.content_type_gating.partitions.ContentTypeGatingPartition._is_audit_enrollment',
-            return_value=True
         ):
             fragment = partition.access_denied_fragment(mock_block, global_staff, GroupFactory(), 'test_allowed_group')
 
