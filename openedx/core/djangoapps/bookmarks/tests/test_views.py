@@ -1,10 +1,15 @@
 """
 Tests for bookmark views.
 """
+from __future__ import absolute_import
+
 import json
-import urllib
 
 import ddt
+import six
+import six.moves.urllib.error
+import six.moves.urllib.parse
+import six.moves.urllib.request
 from django.conf import settings
 from django.urls import reverse
 from mock import patch
@@ -12,6 +17,7 @@ from rest_framework.test import APIClient
 
 from openedx.core.djangolib.testing.utils import skip_unless_lms
 from xmodule.modulestore import ModuleStoreEnum
+
 from .test_api import BookmarkApiEventTestMixin
 from .test_models import BookmarksTestsBase
 
@@ -89,7 +95,7 @@ class BookmarksListViewTests(BookmarksViewsTestsBase):
             bookmarks_count, store_type=ModuleStoreEnum.Type.mongo
         )
 
-        query_parameters = 'course_id={}&page_size={}'.format(urllib.quote(unicode(course.id)), 100)
+        query_parameters = 'course_id={}&page_size={}'.format(six.moves.urllib.parse.quote(six.text_type(course.id)), 100)
         if check_all_fields:
             query_parameters += '&fields=path,display_name'
 
@@ -111,7 +117,7 @@ class BookmarksListViewTests(BookmarksViewsTestsBase):
         self.assert_bookmark_event_emitted(
             mock_tracker,
             event_name='edx.bookmark.listed',
-            course_id=unicode(course.id),
+            course_id=six.text_type(course.id),
             list_type='per_course',
             bookmarks_count=bookmarks_count,
             page_size=100,
@@ -132,7 +138,7 @@ class BookmarksListViewTests(BookmarksViewsTestsBase):
         )
 
         page_size = 5
-        query_parameters = 'course_id={}&page_size={}'.format(urllib.quote(unicode(course.id)), page_size)
+        query_parameters = 'course_id={}&page_size={}'.format(six.moves.urllib.parse.quote(six.text_type(course.id)), page_size)
 
         response = self.send_get(
             client=self.client,
@@ -152,7 +158,7 @@ class BookmarksListViewTests(BookmarksViewsTestsBase):
         self.assert_bookmark_event_emitted(
             mock_tracker,
             event_name='edx.bookmark.listed',
-            course_id=unicode(course.id),
+            course_id=six.text_type(course.id),
             list_type='per_course',
             bookmarks_count=bookmarks_count,
             page_size=page_size,
@@ -225,13 +231,13 @@ class BookmarksListViewTests(BookmarksViewsTestsBase):
         response = self.send_post(
             client=self.client,
             url=reverse('bookmarks'),
-            data={'usage_id': unicode(self.vertical_3.location)}
+            data={'usage_id': six.text_type(self.vertical_3.location)}
         )
 
         # Assert Newly created bookmark.
-        self.assertEqual(response.data['id'], '%s,%s' % (self.user.username, unicode(self.vertical_3.location)))
+        self.assertEqual(response.data['id'], '%s,%s' % (self.user.username, six.text_type(self.vertical_3.location)))
         self.assertEqual(response.data['course_id'], self.course_id)
-        self.assertEqual(response.data['usage_id'], unicode(self.vertical_3.location))
+        self.assertEqual(response.data['usage_id'], six.text_type(self.vertical_3.location))
         self.assertIsNotNone(response.data['created'])
         self.assertEqual(len(response.data['path']), 2)
         self.assertEqual(response.data['display_name'], self.vertical_3.display_name)
@@ -304,7 +310,7 @@ class BookmarksListViewTests(BookmarksViewsTestsBase):
         response = self.send_post(
             client=self.client,
             url=reverse('bookmarks'),
-            data={'usage_id': unicode(blocks[-1].location)},
+            data={'usage_id': six.text_type(blocks[-1].location)},
             expected_status=400
         )
         self.assertEqual(
@@ -336,7 +342,7 @@ class BookmarksListViewTests(BookmarksViewsTestsBase):
     def test_listed_event_for_different_page_size_values(self, mock_tracker, page_size, expected_bookmarks_count,
                                                          expected_page_size, expected_page_number):
         """ Test that edx.course.bookmark.listed event values are as expected for different page size values """
-        query_parameters = 'course_id={}&page_size={}'.format(urllib.quote(self.course_id), page_size)
+        query_parameters = 'course_id={}&page_size={}'.format(six.moves.urllib.parse.quote(self.course_id), page_size)
 
         self.send_get(client=self.client, url=reverse('bookmarks'), query_parameters=query_parameters)
 
@@ -385,7 +391,7 @@ class BookmarksDetailViewTests(BookmarksViewsTestsBase):
             client=self.client,
             url=reverse(
                 'bookmarks_detail',
-                kwargs={'username': self.user.username, 'usage_id': unicode(self.sequential_1.location)}
+                kwargs={'username': self.user.username, 'usage_id': six.text_type(self.sequential_1.location)}
             ),
             query_parameters=query_params
         )
@@ -401,7 +407,7 @@ class BookmarksDetailViewTests(BookmarksViewsTestsBase):
             client=self.client,
             url=reverse(
                 'bookmarks_detail',
-                kwargs={'username': self.other_user.username, 'usage_id': unicode(self.vertical_1.location)}
+                kwargs={'username': self.other_user.username, 'usage_id': six.text_type(self.vertical_1.location)}
             ),
             expected_status=403
         )
@@ -414,7 +420,7 @@ class BookmarksDetailViewTests(BookmarksViewsTestsBase):
             client=self.client,
             url=reverse(
                 'bookmarks_detail',
-                kwargs={'username': 'non-existent', 'usage_id': unicode(self.vertical_1.location)}
+                kwargs={'username': 'non-existent', 'usage_id': six.text_type(self.vertical_1.location)}
             ),
             expected_status=403
         )
@@ -474,7 +480,7 @@ class BookmarksDetailViewTests(BookmarksViewsTestsBase):
         """
         Test that delete bookmark returns 204 status code with success.
         """
-        query_parameters = 'course_id={}'.format(urllib.quote(self.course_id))
+        query_parameters = 'course_id={}'.format(six.moves.urllib.parse.quote(self.course_id))
         response = self.send_get(client=self.client, url=reverse('bookmarks'), query_parameters=query_parameters)
         bookmarks_data = response.data['results']
         self.assertEqual(len(bookmarks_data), 2)
@@ -483,7 +489,7 @@ class BookmarksDetailViewTests(BookmarksViewsTestsBase):
             client=self.client,
             url=reverse(
                 'bookmarks_detail',
-                kwargs={'username': self.user.username, 'usage_id': unicode(self.sequential_1.location)}
+                kwargs={'username': self.user.username, 'usage_id': six.text_type(self.sequential_1.location)}
             )
         )
         response = self.send_get(client=self.client, url=reverse('bookmarks'), query_parameters=query_parameters)
@@ -499,7 +505,7 @@ class BookmarksDetailViewTests(BookmarksViewsTestsBase):
             client=self.client,
             url=reverse(
                 'bookmarks_detail',
-                kwargs={'username': 'other', 'usage_id': unicode(self.vertical_1.location)}
+                kwargs={'username': 'other', 'usage_id': six.text_type(self.vertical_1.location)}
             ),
             expected_status=403
         )
