@@ -875,7 +875,7 @@ urlpatterns += [
 if settings.FEATURES.get('ENABLE_THIRD_PARTY_AUTH'):
     urlpatterns += [
         url(r'', include('third_party_auth.urls')),
-        url(r'api/third_party_auth/', include('third_party_auth.api.urls')),
+        url(r'^api/third_party_auth/', include('third_party_auth.api.urls')),
     ]
 
 # Enterprise
@@ -930,10 +930,10 @@ if settings.FEATURES.get('ENABLE_LTI_PROVIDER'):
     ]
 
 urlpatterns += [
-    url(r'config/self_paced', ConfigurationModelCurrentAPIView.as_view(model=SelfPacedConfiguration)),
-    url(r'config/programs', ConfigurationModelCurrentAPIView.as_view(model=ProgramsApiConfig)),
-    url(r'config/catalog', ConfigurationModelCurrentAPIView.as_view(model=CatalogIntegration)),
-    url(r'config/forums', ConfigurationModelCurrentAPIView.as_view(model=ForumsConfig)),
+    url(r'^config/self_paced', ConfigurationModelCurrentAPIView.as_view(model=SelfPacedConfiguration)),
+    url(r'^config/programs', ConfigurationModelCurrentAPIView.as_view(model=ProgramsApiConfig)),
+    url(r'^config/catalog', ConfigurationModelCurrentAPIView.as_view(model=CatalogIntegration)),
+    url(r'^config/forums', ConfigurationModelCurrentAPIView.as_view(model=ForumsConfig)),
 ]
 
 if settings.DEBUG:
